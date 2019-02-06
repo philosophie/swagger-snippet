@@ -209,9 +209,9 @@ var getHeadersArray = function (swagger, path, method) {
   var pathObj = swagger.paths[path][method]
 
   // 'accept' header:
-  if (typeof pathObj.consumes !== 'undefined') {
-    for (var i in pathObj.consumes) {
-      var type = pathObj.consumes[i]
+  if (typeof swagger.consumes !== 'undefined') {
+    for (var i in swagger.consumes) {
+      var type = swagger.consumes[i]
       headers.push({
         name: 'accept',
         value: type
@@ -220,9 +220,9 @@ var getHeadersArray = function (swagger, path, method) {
   }
 
   // 'content-type' header:
-  if (typeof pathObj.produces !== 'undefined') {
-    for (var j in pathObj.produces) {
-      var type2 = pathObj.produces[j]
+  if (typeof swagger.produces !== 'undefined') {
+    for (var j in swagger.produces) {
+      var type2 = swagger.produces[j]
       headers.push({
         name: 'content-type',
         value: type2
@@ -256,7 +256,7 @@ var getHeadersArray = function (swagger, path, method) {
           basicAuthDef = secScheme
           break
         case 'apikey':
-          if (swagger.securityDefinitions[secScheme].in === 'query') {
+          if (swagger.securityDefinitions[secScheme].in === 'header') {
             apiKeyAuthDef = secScheme
           }
           break
@@ -293,7 +293,7 @@ var getHeadersArray = function (swagger, path, method) {
   } else if (apiKeyAuthDef) {
     headers.push({
       name: swagger.securityDefinitions[apiKeyAuthDef].name,
-      value: 'REPLACE_KEY_VALUE'
+      value: 'Bearer ' + 'REPLACE_BEARER_TOKEN'
     })
   } else if (oauthDef) {
     headers.push({
