@@ -16,6 +16,7 @@
  *   "headersSize" : 150,
  *   "bodySize" : 0,
  *   "comment" : ""
+ *   "_swaggerSettings": {}
  * }
  */
 var Instantiator = require('./schema-instantiator.js')
@@ -45,7 +46,13 @@ var createHar = function (swagger, path, method, queryParamValues) {
     httpVersion: 'HTTP/1.1',
     cookies: [],
     headersSize: 0,
-    bodySize: 0
+    bodySize: 0,
+    // Custom Swagger Settings for Yapstone
+    _swaggerSettings: {
+      originalMethod: JSON.parse(JSON.stringify(swagger.paths[path][method])),
+      path: path,
+      pathParams: getPathParams(swagger, path, method)
+    }
   }
 
   // get payload data, if available:
@@ -358,6 +365,37 @@ var resolveRef = function (oai, ref) {
     }
   }
   return recursive(oai, 1)
+}
+
+var getPathParams = function(swagger, path, method) {
+  // Set the optional parameter if it's not provided
+  if (typeof values === 'undefined') {
+    values = {}
+  }
+
+  var pathParams = []
+
+  if (typeof swagger.paths[path][method].parameters !== 'undefined') {
+    for (var i in swagger.paths[path][method].parameters) {
+      var param = swagger.paths[path][method].parameters[i]
+      if (typeof param['$ref'] === 'string' &&
+        !/^http/.test(param['$ref'])) {
+        param = resolveRef(swagger, param['$ref'])
+      }
+      if (typeof param.in !== 'undefined' && param.in.toLowerCase() === 'path') {
+        pathParams.push({
+          name: param.name,
+          value: typeof values[param.name] === 'undefined'
+            ? (typeof param.default === 'undefined'
+              ? ('SOME_' + param.type.toUpperCase() + '_VALUE')
+              : param.default + '')
+            : (values[param.name] + '') /* adding a empty string to convert to string */
+        })
+      }
+    }
+  }
+
+  return pathParams
 }
 
 module.exports = {
