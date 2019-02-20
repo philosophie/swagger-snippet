@@ -679,7 +679,7 @@ https-browserify@~0.0.0:
 
 httpsnippet@philosophie/httpsnippet:
   version "1.16.6"
-  resolved "https://codeload.github.com/philosophie/httpsnippet/tar.gz/c069d46169d14a00b9073a7694c151ba0e713a41"
+  resolved "https://codeload.github.com/philosophie/httpsnippet/tar.gz/f69e48b027386d01a884c78d2253c370adc9014a"
   dependencies:
     camelcase "^5.0.0"
     chalk "^1.1.1"
