@@ -27,27 +27,27 @@
  * SOFTWARE.
  *
  */
-'use strict'
+"use strict";
 
 // The JSON Object that defines the default values of certain types.
 var typesInstantiator = {
-  'string': '<ADD STRING VALUE>',
-  'number': 0,
-  'integer': 0,
-  'null': null,
-  'boolean': false, // Always stay positive?
-  'object': { }
-}
+  string: "<ADD STRING VALUE>",
+  number: 0,
+  integer: 0,
+  null: null,
+  boolean: false, // Always stay positive?
+  object: {}
+};
 
 /**
  * Checks whether a variable is a primitive.
  * @param obj - an object.
  * @returns {boolean}
  */
-function isPrimitive (obj) {
-  var type = obj.type
+function isPrimitive(obj) {
+  var type = obj.type;
 
-  return typesInstantiator[type] !== undefined
+  return typesInstantiator[type] !== undefined;
 }
 
 /**
@@ -56,21 +56,23 @@ function isPrimitive (obj) {
  * @param requiredArray - the required array
  * @returns {boolean}
  */
-function isPropertyRequired (property, requiredArray) {
-  var found = false
-  requiredArray = requiredArray || []
-  requiredArray.forEach(function (requiredProperty) {
+function isPropertyRequired(property, requiredArray) {
+  var found = false;
+  requiredArray = requiredArray || [];
+  requiredArray.forEach(function(requiredProperty) {
     if (requiredProperty === property) {
-      found = true
+      found = true;
     }
-  })
-  return found
+  });
+  return found;
 }
 
-function shouldVisit (property, obj, options) {
-  return (!options.requiredPropertiesOnly) ||
+function shouldVisit(property, obj, options) {
+  return (
+    !options.requiredPropertiesOnly ||
     (options.requiredPropertiesOnly &&
       isPropertyRequired(property, obj.required))
+  );
 }
 
 /**
@@ -78,15 +80,15 @@ function shouldVisit (property, obj, options) {
  * @param val - The object that represents the primitive.
  * @returns {*}
  */
-function instantiatePrimitive (val) {
-  var type = val.type
+function instantiatePrimitive(val) {
+  var type = val.type;
 
   // Support for default values in the JSON Schema.
   if (val.default) {
-    return val.default
+    return val.default;
   }
 
-  return typesInstantiator[type]
+  return typesInstantiator[type];
 }
 
 /**
@@ -94,8 +96,8 @@ function instantiatePrimitive (val) {
  * @param obj - an object.
  * @returns {boolean}
  */
-function isEnum (obj) {
-  return Object.prototype.toString.call(obj.enum) === '[object Array]'
+function isEnum(obj) {
+  return Object.prototype.toString.call(obj.enum) === "[object Array]";
 }
 
 /**
@@ -103,15 +105,15 @@ function isEnum (obj) {
  * @param val - The object that represents the primitive.
  * @returns {*}
  */
-function instantiateEnum (val) {
+function instantiateEnum(val) {
   // Support for default values in the JSON Schema.
   if (val.default) {
-    return val.default
+    return val.default;
   }
   if (!val.enum.length) {
-    return undefined
+    return undefined;
   }
-  return val.enum[0]
+  return val.enum[0];
 }
 
 /**
@@ -120,8 +122,8 @@ function instantiateEnum (val) {
  * @param schema - The schema to instantiate.
  * @returns {*}
  */
-function instantiate (schema, options) {
-  options = options || {}
+function instantiate(schema, options) {
+  options = options || {};
 
   /**
    * Visits each sub-object using recursion.
@@ -130,54 +132,54 @@ function instantiate (schema, options) {
    * @param name - The name of the current object.
    * @param data - The instance data that represents the current object.
    */
-  function visit (obj, name, data) {
+  function visit(obj, name, data) {
     if (!obj) {
-      return
+      return;
     }
-    var i
-    var type = obj.type
+    var i;
+    var type = obj.type;
     // We want non-primitives objects (primitive === object w/o properties).
-    if (type === 'object' && obj.properties) {
-      data[name] = data[name] || { }
+    if (type === "object" && obj.properties) {
+      data[name] = data[name] || {};
 
       // Visit each property.
       for (var property in obj.properties) {
         if (obj.properties.hasOwnProperty(property)) {
           if (shouldVisit(property, obj, options)) {
-            visit(obj.properties[property], property, data[name])
+            visit(obj.properties[property], property, data[name]);
           }
         }
       }
     } else if (obj.allOf) {
       for (i = 0; i < obj.allOf.length; i++) {
-        visit(obj.allOf[i], name, data)
+        visit(obj.allOf[i], name, data);
       }
-    } else if (type === 'array') {
-      data[name] = []
-      var len = 1
+    } else if (type === "array") {
+      data[name] = [];
+      var len = 1;
       if (obj.minItems || obj.minItems === 0) {
-        len = obj.minItems
+        len = obj.minItems;
       }
 
       // Instantiate 'len' items.
       for (i = 0; i < len; i++) {
-        visit(obj.items, i, data[name])
+        visit(obj.items, i, data[name]);
       }
     } else if (isEnum(obj)) {
-      data[name] = instantiateEnum(obj)
+      data[name] = instantiateEnum(obj);
     } else if (isPrimitive(obj)) {
-      data[name] = instantiatePrimitive(obj)
+      data[name] = instantiatePrimitive(obj);
     }
   }
 
-  var data = {}
-  visit(schema, 'kek', data)
-  return data['kek']
+  var data = {};
+  visit(schema, "kek", data);
+  return data["kek"];
 }
 
 // If we're using Node.js, export the module.
-if (typeof module !== 'undefined') {
+if (typeof module !== "undefined") {
   module.exports = {
     instantiate: instantiate
-  }
+  };
 }

@@ -19,7 +19,7 @@
  *   "_swaggerSettings": {}
  * }
  */
-var Instantiator = require('./schema-instantiator.js')
+var Instantiator = require("./schema-instantiator.js");
 
 /**
  * Create HAR Request object for path and method pair described in given swagger.
@@ -30,20 +30,20 @@ var Instantiator = require('./schema-instantiator.js')
  * @param  {Object} queryParamValues  Optional: Values for the query parameters if present
  * @return {Object}                   HAR Request object
  */
-var createHar = function (swagger, path, method, queryParamValues) {
+var createHar = function(swagger, path, method, queryParamValues) {
   // if the operational parameter is not provided, set it to empty object
-  if (typeof queryParamValues === 'undefined') {
-    queryParamValues = {}
+  if (typeof queryParamValues === "undefined") {
+    queryParamValues = {};
   }
 
-  var baseUrl = getBaseUrl(swagger)
+  var baseUrl = getBaseUrl(swagger);
 
   var har = {
     method: method.toUpperCase(),
     url: baseUrl + path,
     headers: getHeadersArray(swagger, path, method),
     queryString: getQueryStrings(swagger, path, method, queryParamValues),
-    httpVersion: 'HTTP/1.1',
+    httpVersion: "HTTP/1.1",
     cookies: [],
     headersSize: 0,
     bodySize: 0,
@@ -53,14 +53,14 @@ var createHar = function (swagger, path, method, queryParamValues) {
       path: path,
       pathParams: getPathParams(swagger, path, method)
     }
-  }
+  };
 
   // get payload data, if available:
-  var postData = getPayload(swagger, path, method)
-  if (postData) har.postData = postData
+  var postData = getPayload(swagger, path, method);
+  if (postData) har.postData = postData;
 
-  return har
-}
+  return har;
+};
 
 /**
  * Get the payload definition for the given endpoint (path + method) from the
@@ -72,31 +72,20 @@ var createHar = function (swagger, path, method, queryParamValues) {
  * @param  {string} method
  * @return {object}
  */
-var getPayload = function (swagger, path, method) {
-  if (typeof swagger.paths[path][method].parameters !== 'undefined') {
-    for (var i in swagger.paths[path][method].parameters) {
-      var param = swagger.paths[path][method].parameters[i]
-      if (typeof param.in !== 'undefined' && param.in.toLowerCase() === 'body' &&
-        typeof param.schema !== 'undefined') {
-        var schema
-        if (typeof param.schema['$ref'] === 'undefined') {
-          schema = param.schema
-        } else if (/^http/.test(param.schema['$ref'])) {
-          // can't resolve this for now...
-        } else {
-          var ref = param.schema['$ref'].split('/').slice(-1)[0]
-          schema = getResolvedSchema(swagger, swagger.definitions[ref])
-        }
-
-        return {
-          mimeType: 'application/json',
-          text: JSON.stringify(Instantiator.instantiate(schema))
-        }
-      }
-    }
+var getPayload = function(swagger, path, method) {
+  if (typeof swagger.paths[path][method].requestBody !== "undefined") {
+    return {
+      mimeType: "application/json",
+      text: JSON.stringify(
+        Instantiator.instantiate(
+          swagger.paths[path][method].requestBody.content["application/json"]
+            .schema
+        )
+      )
+    };
   }
-  return null
-}
+  return null;
+};
 
 /**
  * Get a complete JSON schema from Swagger, where all references ($ref) are
@@ -109,33 +98,31 @@ var getPayload = function (swagger, path, method) {
  * @param  {[type]} ref     [description]
  * @return {[type]}         [description]
  */
-var getResolvedSchema = function (swagger, schema) {
-  if (schema.type === 'object') {
-    if (typeof schema.properties !== 'undefined') {
+var getResolvedSchema = function(swagger, schema) {
+  if (schema.type === "object") {
+    if (typeof schema.properties !== "undefined") {
       for (var propKey in schema.properties) {
-        var prop = schema.properties[propKey]
-        if (typeof prop['$ref'] === 'string' &&
-          !/^http/.test(prop['$ref'])) {
-          var ref = prop['$ref'].split('/').slice(-1)[0]
-          schema.properties[propKey] = swagger.definitions[ref]
+        var prop = schema.properties[propKey];
+        if (typeof prop["$ref"] === "string" && !/^http/.test(prop["$ref"])) {
+          var ref = prop["$ref"].split("/").slice(-1)[0];
+          schema.properties[propKey] = swagger.definitions[ref];
         }
-        getResolvedSchema(swagger, schema.properties[propKey])
+        getResolvedSchema(swagger, schema.properties[propKey]);
       }
     }
-  } else if (schema.type === 'array') {
-    if (typeof schema.items !== 'undefined') {
+  } else if (schema.type === "array") {
+    if (typeof schema.items !== "undefined") {
       for (var itemKey in schema.items) {
-        if (itemKey === '$ref' &&
-          !/^http/.test(schema.items[itemKey])) {
-          var ref2 = schema.items['$ref'].split('/').slice(-1)[0]
-          schema.items = swagger.definitions[ref2]
+        if (itemKey === "$ref" && !/^http/.test(schema.items[itemKey])) {
+          var ref2 = schema.items["$ref"].split("/").slice(-1)[0];
+          schema.items = swagger.definitions[ref2];
         }
-        getResolvedSchema(swagger, schema.items)
+        getResolvedSchema(swagger, schema.items);
       }
     }
   }
-  return schema
-}
+  return schema;
+};
 
 /**
  * Gets the base URL constructed from the given swagger.
@@ -143,22 +130,22 @@ var getResolvedSchema = function (swagger, schema) {
  * @param  {Object} swagger Swagger document
  * @return {string}         Base URL
  */
-var getBaseUrl = function (swagger) {
-  var baseUrl = ''
-  if (typeof swagger.schemes !== 'undefined') {
-    baseUrl += swagger.schemes[0]
+var getBaseUrl = function(swagger) {
+  var baseUrl = "";
+  if (typeof swagger.schemes !== "undefined") {
+    baseUrl += swagger.schemes[0];
   } else {
-    baseUrl += 'http'
+    baseUrl += "http";
   }
 
-  if (swagger.basePath === '/') {
-    baseUrl += '://' + swagger.host
+  if (swagger.basePath === "/") {
+    baseUrl += "://" + swagger.host;
   } else {
-    baseUrl += '://' + swagger.host + swagger.basePath
+    baseUrl += "://" + swagger.host + swagger.basePath;
   }
 
-  return baseUrl
-}
+  return baseUrl;
+};
 
 /**
  * Get array of objects describing the query parameters for a path and method pair
@@ -170,36 +157,40 @@ var getBaseUrl = function (swagger) {
  * @param  {Object} values  Optional: query parameter values to use in the snippet if present
  * @return {array}          List of objects describing the query strings
  */
-var getQueryStrings = function (swagger, path, method, values) {
+var getQueryStrings = function(swagger, path, method, values) {
   // Set the optional parameter if it's not provided
-  if (typeof values === 'undefined') {
-    values = {}
+  if (typeof values === "undefined") {
+    values = {};
   }
 
-  var queryStrings = []
+  var queryStrings = [];
 
-  if (typeof swagger.paths[path][method].parameters !== 'undefined') {
+  if (typeof swagger.paths[path][method].parameters !== "undefined") {
     for (var i in swagger.paths[path][method].parameters) {
-      var param = swagger.paths[path][method].parameters[i]
-      if (typeof param['$ref'] === 'string' &&
-        !/^http/.test(param['$ref'])) {
-        param = resolveRef(swagger, param['$ref'])
+      var param = swagger.paths[path][method].parameters[i];
+      if (typeof param["$ref"] === "string" && !/^http/.test(param["$ref"])) {
+        param = resolveRef(swagger, param["$ref"]);
       }
-      if (typeof param.in !== 'undefined' && param.in.toLowerCase() === 'query') {
+      if (
+        typeof param.in !== "undefined" &&
+        param.in.toLowerCase() === "query"
+      ) {
         queryStrings.push({
           name: param.name,
-          value: typeof values[param.name] === 'undefined'
-            ? (typeof param.default === 'undefined'
-              ? ('SOME_' + param.type.toUpperCase() + '_VALUE')
-              : param.default + '')
-            : (values[param.name] + '') /* adding a empty string to convert to string */
-        })
+          value:
+            typeof values[param.name] === "undefined"
+              ? typeof param.default === "undefined"
+                ? "SOME_" + param.type.toUpperCase() + "_VALUE"
+                : param.default + ""
+              : values[param.name] +
+                "" /* adding a empty string to convert to string */
+        });
       }
     }
   }
 
-  return queryStrings
-}
+  return queryStrings;
+};
 
 /**
  * Get an array of objects describing the header for a path and method pair
@@ -210,107 +201,114 @@ var getQueryStrings = function (swagger, path, method, values) {
  * @param  {string} method  Key of the method
  * @return {array}          List of objects describing the header
  */
-var getHeadersArray = function (swagger, path, method) {
-  var headers = []
+var getHeadersArray = function(swagger, path, method) {
+  var headers = [];
 
-  var pathObj = swagger.paths[path][method]
+  var pathObj = swagger.paths[path][method];
 
   // 'accept' header:
-  if (typeof swagger.consumes !== 'undefined') {
+  if (typeof swagger.consumes !== "undefined") {
     for (var i in swagger.consumes) {
-      var type = swagger.consumes[i]
+      var type = swagger.consumes[i];
       headers.push({
-        name: 'accept',
+        name: "accept",
         value: type
-      })
+      });
     }
   }
 
   // 'content-type' header:
-  if (typeof swagger.produces !== 'undefined') {
+  if (typeof swagger.produces !== "undefined") {
     for (var j in swagger.produces) {
-      var type2 = swagger.produces[j]
+      var type2 = swagger.produces[j];
       headers.push({
-        name: 'content-type',
+        name: "content-type",
         value: type2
-      })
+      });
     }
   }
 
   // headers defined in path object:
-  if (typeof pathObj.parameters !== 'undefined') {
+  if (typeof pathObj.parameters !== "undefined") {
     for (var k in pathObj.parameters) {
-      var param = pathObj.parameters[k]
-      if (typeof param.in !== 'undefined' && param.in.toLowerCase() === 'header') {
+      var param = pathObj.parameters[k];
+      if (
+        typeof param.in !== "undefined" &&
+        param.in.toLowerCase() === "header"
+      ) {
         headers.push({
           name: param.name,
-          value: 'SOME_' + param.type.toUpperCase() + '_VALUE'
-        })
+          value: param.example
+            ? param.example
+            : "SOME_" + param.name.toUpperCase() + "_VALUE"
+        });
       }
     }
   }
 
   // security:
-  var basicAuthDef
-  var apiKeyAuthDef
-  var oauthDef
-  if (typeof pathObj.security !== 'undefined') {
+  var basicAuthDef;
+  var apiKeyAuthDef;
+  var oauthDef;
+  if (typeof pathObj.security !== "undefined") {
     for (var l in pathObj.security) {
-      var secScheme = Object.keys(pathObj.security[l])[0]
-      var authType = swagger.securityDefinitions[secScheme].type.toLowerCase()
+      var secScheme = Object.keys(pathObj.security[l])[0];
+      var authType = swagger.securityDefinitions[secScheme].type.toLowerCase();
       switch (authType) {
-        case 'basic':
-          basicAuthDef = secScheme
-          break
-        case 'apikey':
-          if (swagger.securityDefinitions[secScheme].in === 'header') {
-            apiKeyAuthDef = secScheme
+        case "basic":
+          basicAuthDef = secScheme;
+          break;
+        case "apikey":
+          if (swagger.securityDefinitions[secScheme].in === "header") {
+            apiKeyAuthDef = secScheme;
           }
-          break
-        case 'oauth2':
-          oauthDef = secScheme
-          break
+          break;
+        case "oauth2":
+          oauthDef = secScheme;
+          break;
       }
     }
-  } else if (typeof swagger.security !== 'undefined') {
+  } else if (typeof swagger.security !== "undefined") {
     for (var m in swagger.security) {
-      var overallSecScheme = Object.keys(swagger.security[m])[0]
-      var overallAuthType = swagger.securityDefinitions[overallSecScheme].type.toLowerCase()
+      var overallSecScheme = Object.keys(swagger.security[m])[0];
+      var overallAuthType = swagger.securityDefinitions[
+        overallSecScheme
+      ].type.toLowerCase();
       switch (overallAuthType) {
-        case 'basic':
-          basicAuthDef = overallSecScheme
-          break
-        case 'apikey':
-          if (swagger.securityDefinitions[overallSecScheme].in === 'query') {
-            apiKeyAuthDef = overallSecScheme
+        case "basic":
+          basicAuthDef = overallSecScheme;
+          break;
+        case "apikey":
+          if (swagger.securityDefinitions[overallSecScheme].in === "query") {
+            apiKeyAuthDef = overallSecScheme;
           }
-          break
-        case 'oauth2':
-          oauthDef = overallSecScheme
-          break
+          break;
+        case "oauth2":
+          oauthDef = overallSecScheme;
+          break;
       }
     }
   }
 
   if (basicAuthDef) {
     headers.push({
-      name: 'Authorization',
-      value: 'Basic ' + 'REPLACE_BASIC_AUTH'
-    })
+      name: "Authorization",
+      value: "Basic " + "REPLACE_BASIC_AUTH"
+    });
   } else if (apiKeyAuthDef) {
     headers.push({
       name: swagger.securityDefinitions[apiKeyAuthDef].name,
-      value: 'Bearer ' + 'REPLACE_BEARER_TOKEN'
-    })
+      value: "Bearer " + "REPLACE_BEARER_TOKEN"
+    });
   } else if (oauthDef) {
     headers.push({
-      name: 'Authorization',
-      value: 'Bearer ' + 'REPLACE_BEARER_TOKEN'
-    })
+      name: "Authorization",
+      value: "Bearer " + "REPLACE_BEARER_TOKEN"
+    });
   }
 
-  return headers
-}
+  return headers;
+};
 
 /**
  * Produces array of HAR files for given Swagger document
@@ -318,31 +316,33 @@ var getHeadersArray = function (swagger, path, method) {
  * @param  {object}   swagger          A swagger document
  * @param  {Function} callback
  */
-var swaggerToHarList = function (swagger) {
+var swaggerToHarList = function(swagger) {
   try {
     // determine basePath:
-    var baseUrl = getBaseUrl(swagger)
+    var baseUrl = getBaseUrl(swagger);
 
     // iterate Swagger and create har objects:
-    var harList = []
+    var harList = [];
     for (var path in swagger.paths) {
       for (var method in swagger.paths[path]) {
-        var url = baseUrl + path
-        var har = createHar(swagger, path, method)
+        var url = baseUrl + path;
+        var har = createHar(swagger, path, method);
         harList.push({
           method: method.toUpperCase(),
           url: url,
-          description: swagger.paths[path][method].description || 'No description available',
+          description:
+            swagger.paths[path][method].description ||
+            "No description available",
           har: har
-        })
+        });
       }
     }
 
-    return harList
+    return harList;
   } catch (e) {
-    return null
+    return null;
   }
-}
+};
 
 /**
  * Returns the value referenced in the given reference string
@@ -351,54 +351,59 @@ var swaggerToHarList = function (swagger) {
  * @param  {string} ref A reference string
  * @return {any}
  */
-var resolveRef = function (oai, ref) {
-  var parts = ref.split('/')
+var resolveRef = function(oai, ref) {
+  var parts = ref.split("/");
 
-  if (parts.length <= 1) return {} // = 3
+  if (parts.length <= 1) return {}; // = 3
 
-  var recursive = function (obj, index) {
-    if (index + 1 < parts.length) { // index = 1
-      var newCount = index + 1
-      return recursive(obj[parts[index]], newCount)
+  var recursive = function(obj, index) {
+    if (index + 1 < parts.length) {
+      // index = 1
+      var newCount = index + 1;
+      return recursive(obj[parts[index]], newCount);
     } else {
-      return obj[parts[index]]
+      return obj[parts[index]];
     }
-  }
-  return recursive(oai, 1)
-}
+  };
+  return recursive(oai, 1);
+};
 
 var getPathParams = function(swagger, path, method) {
   // Set the optional parameter if it's not provided
-  if (typeof values === 'undefined') {
-    values = {}
+  if (typeof values === "undefined") {
+    values = {};
   }
 
-  var pathParams = []
+  var pathParams = [];
 
-  if (typeof swagger.paths[path][method].parameters !== 'undefined') {
+  if (typeof swagger.paths[path][method].parameters !== "undefined") {
     for (var i in swagger.paths[path][method].parameters) {
-      var param = swagger.paths[path][method].parameters[i]
-      if (typeof param['$ref'] === 'string' &&
-        !/^http/.test(param['$ref'])) {
-        param = resolveRef(swagger, param['$ref'])
+      var param = swagger.paths[path][method].parameters[i];
+      if (typeof param["$ref"] === "string" && !/^http/.test(param["$ref"])) {
+        param = resolveRef(swagger, param["$ref"]);
       }
-      if (typeof param.in !== 'undefined' && param.in.toLowerCase() === 'path') {
+      if (
+        typeof param.in !== "undefined" &&
+        param.in.toLowerCase() === "path"
+      ) {
         pathParams.push({
           name: param.name,
-          value: typeof values[param.name] === 'undefined'
-            ? (typeof param.default === 'undefined'
-              ? ('SOME_' + param.type.toUpperCase() + '_VALUE')
-              : param.default + '')
-            : (values[param.name] + '') /* adding a empty string to convert to string */
-        })
+          value:
+            typeof values[param.name] === "undefined"
+              ? typeof param.default === "undefined"
+                ? "SOME_" + param.type.toUpperCase() + "_VALUE"
+                : param.default + ""
+              : values[param.name] +
+                "" /* adding a empty string to convert to string */
+        });
       }
     }
   }
 
-  return pathParams
-}
+  return pathParams;
+};
 
 module.exports = {
   getAll: swaggerToHarList,
   getEndpoint: createHar
-}
+};
