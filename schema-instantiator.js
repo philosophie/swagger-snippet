@@ -168,7 +168,7 @@ function instantiate(schema, options) {
     } else if (isEnum(obj)) {
       data[name] = instantiateEnum(obj);
     } else if (isPrimitive(obj)) {
-      data[name] = instantiatePrimitive(obj);
+      data[name] = obj.example ? obj.example : instantiatePrimitive(obj);
     }
   }
 

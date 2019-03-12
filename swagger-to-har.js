@@ -386,15 +386,18 @@ var getPathParams = function(swagger, path, method) {
         typeof param.in !== "undefined" &&
         param.in.toLowerCase() === "path"
       ) {
+        var value = param.example
+          ? param.example
+          : typeof values[param.name] === "undefined"
+          ? typeof param.default === "undefined"
+            ? "SOME_" + param.type.toUpperCase() + "_VALUE"
+            : param.default + ""
+          : values[param.name] +
+            ""; /* adding a empty string to convert to string */
+
         pathParams.push({
           name: param.name,
-          value:
-            typeof values[param.name] === "undefined"
-              ? typeof param.default === "undefined"
-                ? "SOME_" + param.type.toUpperCase() + "_VALUE"
-                : param.default + ""
-              : values[param.name] +
-                "" /* adding a empty string to convert to string */
+          value: value
         });
       }
     }
