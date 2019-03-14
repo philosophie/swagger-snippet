@@ -175,7 +175,6 @@ var getQueryStrings = function(swagger, path, method, values) {
         typeof param.in !== "undefined" &&
         param.in.toLowerCase() === "query"
       ) {
-        // debugger;
         var type = param.in ? param.schema.type : param.type;
 
         queryStrings.push({
@@ -389,11 +388,13 @@ var getPathParams = function(swagger, path, method) {
         typeof param.in !== "undefined" &&
         param.in.toLowerCase() === "path"
       ) {
+        var type = param.in ? param.schema.type : param.type;
+
         var value = param.example
           ? param.example
           : typeof values[param.name] === "undefined"
           ? typeof param.default === "undefined"
-            ? "SOME_" + param.type.toUpperCase() + "_VALUE"
+            ? "SOME_" + type.toUpperCase() + "_VALUE"
             : param.default + ""
           : values[param.name] +
             ""; /* adding a empty string to convert to string */
