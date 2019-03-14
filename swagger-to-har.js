@@ -51,7 +51,8 @@ var createHar = function(swagger, path, method, queryParamValues) {
     _swaggerSettings: {
       originalMethod: JSON.parse(JSON.stringify(swagger.paths[path][method])),
       path: path,
-      pathParams: getPathParams(swagger, path, method)
+      pathParams: getPathParams(swagger, path, method),
+      headerParams: getHeaderParams(swagger, path, method)
     }
   };
 
@@ -401,13 +402,42 @@ var getPathParams = function(swagger, path, method) {
 
         pathParams.push({
           name: param.name,
-          value: value
+          value: value,
+          type: param.schema.type
         });
       }
     }
   }
 
   return pathParams;
+};
+
+var getHeaderParams = function(swagger, path, method) {
+  var headers = [];
+
+  var pathObj = swagger.paths[path][method];
+
+  // headers defined in path object:
+  if (typeof pathObj.parameters !== "undefined") {
+    for (var k in pathObj.parameters) {
+      var param = pathObj.parameters[k];
+      if (
+        typeof param.in !== "undefined" &&
+        param.in.toLowerCase() === "header" &&
+        param.required
+      ) {
+        headers.push({
+          name: param.name,
+          value: param.example
+            ? param.example
+            : "SOME_" + param.name.toUpperCase() + "_VALUE",
+          type: param.schema.type
+        });
+      }
+    }
+  }
+
+  return headers;
 };
 
 module.exports = {
