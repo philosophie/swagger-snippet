@@ -52,7 +52,7 @@ var createHar = function(swagger, path, method, queryParamValues) {
       originalMethod: JSON.parse(JSON.stringify(swagger.paths[path][method])),
       path: path,
       pathParams: getPathParams(swagger, path, method),
-      headerParams: getHeaderParams(swagger, path, method)
+      requiredHeaderParams: getRequiredHeaderParams(swagger, path, method)
     }
   };
 
@@ -237,7 +237,8 @@ var getHeadersArray = function(swagger, path, method) {
       var param = pathObj.parameters[k];
       if (
         typeof param.in !== "undefined" &&
-        param.in.toLowerCase() === "header"
+        param.in.toLowerCase() === "header" &&
+        param.required
       ) {
         headers.push({
           name: param.name,
@@ -247,67 +248,6 @@ var getHeadersArray = function(swagger, path, method) {
         });
       }
     }
-  }
-
-  // security:
-  var basicAuthDef;
-  var apiKeyAuthDef;
-  var oauthDef;
-  if (typeof pathObj.security !== "undefined") {
-    for (var l in pathObj.security) {
-      var secScheme = Object.keys(pathObj.security[l])[0];
-      var authType = swagger.securityDefinitions[secScheme].type.toLowerCase();
-      switch (authType) {
-        case "basic":
-          basicAuthDef = secScheme;
-          break;
-        case "apikey":
-          if (swagger.securityDefinitions[secScheme].in === "header") {
-            apiKeyAuthDef = secScheme;
-          }
-          break;
-        case "oauth2":
-          oauthDef = secScheme;
-          break;
-      }
-    }
-  } else if (typeof swagger.security !== "undefined") {
-    for (var m in swagger.security) {
-      var overallSecScheme = Object.keys(swagger.security[m])[0];
-      var overallAuthType = swagger.securityDefinitions[
-        overallSecScheme
-      ].type.toLowerCase();
-      switch (overallAuthType) {
-        case "basic":
-          basicAuthDef = overallSecScheme;
-          break;
-        case "apikey":
-          if (swagger.securityDefinitions[overallSecScheme].in === "query") {
-            apiKeyAuthDef = overallSecScheme;
-          }
-          break;
-        case "oauth2":
-          oauthDef = overallSecScheme;
-          break;
-      }
-    }
-  }
-
-  if (basicAuthDef) {
-    headers.push({
-      name: "Authorization",
-      value: "Basic " + "REPLACE_BASIC_AUTH"
-    });
-  } else if (apiKeyAuthDef) {
-    headers.push({
-      name: swagger.securityDefinitions[apiKeyAuthDef].name,
-      value: "Bearer " + "REPLACE_BEARER_TOKEN"
-    });
-  } else if (oauthDef) {
-    headers.push({
-      name: "Authorization",
-      value: "Bearer " + "REPLACE_BEARER_TOKEN"
-    });
   }
 
   return headers;
@@ -412,7 +352,7 @@ var getPathParams = function(swagger, path, method) {
   return pathParams;
 };
 
-var getHeaderParams = function(swagger, path, method) {
+var getRequiredHeaderParams = function(swagger, path, method) {
   var headers = [];
 
   var pathObj = swagger.paths[path][method];
