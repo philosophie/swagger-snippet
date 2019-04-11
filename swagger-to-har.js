@@ -30,7 +30,7 @@ var Instantiator = require("./schema-instantiator.js");
  * @param  {Object} queryParamValues  Optional: Values for the query parameters if present
  * @return {Object}                   HAR Request object
  */
-var createHar = function(swagger, path, method, queryParamValues) {
+var createHar = function(swagger, path, method, queryParamValues, apiKey) {
   // if the operational parameter is not provided, set it to empty object
   if (typeof queryParamValues === "undefined") {
     queryParamValues = {};
@@ -41,7 +41,7 @@ var createHar = function(swagger, path, method, queryParamValues) {
   var har = {
     method: method.toUpperCase(),
     url: baseUrl + path,
-    headers: getHeadersArray(swagger, path, method),
+    headers: getHeadersArray(swagger, path, method, apiKey),
     queryString: getQueryStrings(swagger, path, method, queryParamValues),
     httpVersion: "HTTP/1.1",
     cookies: [],
@@ -52,7 +52,7 @@ var createHar = function(swagger, path, method, queryParamValues) {
       originalMethod: JSON.parse(JSON.stringify(swagger.paths[path][method])),
       path: path,
       pathParams: getPathParams(swagger, path, method),
-      requiredHeaderParams: getRequiredHeaderParams(swagger, path, method)
+      requiredHeaderParams: getRequiredHeaderParams(swagger, path, method, apiKey)
     }
   };
 
@@ -204,7 +204,7 @@ var getQueryStrings = function(swagger, path, method, values) {
  * @param  {string} method  Key of the method
  * @return {array}          List of objects describing the header
  */
-var getHeadersArray = function(swagger, path, method) {
+var getHeadersArray = function(swagger, path, method, apiKey) {
   var headers = [];
 
   var pathObj = swagger.paths[path][method];
@@ -239,12 +239,19 @@ var getHeadersArray = function(swagger, path, method) {
         typeof param.in !== "undefined" &&
         param.in.toLowerCase() === "header" &&
         param.required
-      ) {
+      ) if(param.name === 'Authorization' && apiKey) {
+        headers.push({
+          name: param.name,
+          value: 'Bearer ' + apiKey,
+          type: param.schema.type
+        });
+      } else {
         headers.push({
           name: param.name,
           value: param.example
             ? param.example
-            : "SOME_" + param.name.toUpperCase() + "_VALUE"
+            : "SOME_" + param.name.toUpperCase() + "_VALUE",
+          type: param.schema.type
         });
       }
     }
@@ -352,7 +359,7 @@ var getPathParams = function(swagger, path, method) {
   return pathParams;
 };
 
-var getRequiredHeaderParams = function(swagger, path, method) {
+var getRequiredHeaderParams = function(swagger, path, method, apiKey) {
   var headers = [];
 
   var pathObj = swagger.paths[path][method];
@@ -366,13 +373,21 @@ var getRequiredHeaderParams = function(swagger, path, method) {
         param.in.toLowerCase() === "header" &&
         param.required
       ) {
-        headers.push({
-          name: param.name,
-          value: param.example
-            ? param.example
-            : "SOME_" + param.name.toUpperCase() + "_VALUE",
-          type: param.schema.type
-        });
+        if(param.name === 'Authorization' && apiKey) {
+          headers.push({
+            name: param.name,
+            value: apiKey,
+            type: param.schema.type
+          });
+        } else {
+          headers.push({
+            name: param.name,
+            value: param.example
+              ? param.example
+              : "SOME_" + param.name.toUpperCase() + "_VALUE",
+            type: param.schema.type
+          });
+        }
       }
     }
   }
