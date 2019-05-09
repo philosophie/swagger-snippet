@@ -132,20 +132,9 @@ var getResolvedSchema = function(swagger, schema) {
  * @return {string}         Base URL
  */
 var getBaseUrl = function(swagger) {
-  var baseUrl = "";
-  if (typeof swagger.schemes !== "undefined") {
-    baseUrl += swagger.schemes[0];
-  } else {
-    baseUrl += "http";
+  if(swagger.servers && swagger.servers.length > 0) {
+    return swagger.servers[0].url
   }
-
-  if (swagger.basePath === "/") {
-    baseUrl += "://" + swagger.host;
-  } else {
-    baseUrl += "://" + swagger.host + swagger.basePath;
-  }
-
-  return baseUrl;
 };
 
 /**
@@ -210,26 +199,16 @@ var getHeadersArray = function(swagger, path, method, apiKey) {
   var pathObj = swagger.paths[path][method];
 
   // 'accept' header:
-  if (typeof swagger.consumes !== "undefined") {
-    for (var i in swagger.consumes) {
-      var type = swagger.consumes[i];
-      headers.push({
-        name: "accept",
-        value: type
-      });
-    }
-  }
+  headers.push({
+    name: "accept",
+    value: 'application/json'
+  });
 
   // 'content-type' header:
-  if (typeof swagger.produces !== "undefined") {
-    for (var j in swagger.produces) {
-      var type2 = swagger.produces[j];
-      headers.push({
-        name: "content-type",
-        value: type2
-      });
-    }
-  }
+  headers.push({
+    name: "content-type",
+    value: 'application/json'
+  });
 
   // headers defined in path object:
   if (typeof pathObj.parameters !== "undefined") {
