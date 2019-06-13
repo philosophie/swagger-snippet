@@ -30,7 +30,7 @@ var Instantiator = require("./schema-instantiator.js");
  * @param  {Object} queryParamValues  Optional: Values for the query parameters if present
  * @return {Object}                   HAR Request object
  */
-var createHar = function(swagger, path, method, queryParamValues, apiKey) {
+var createHar = function(swagger, path, method, queryParamValues, contentType, apiKey) {
   // if the operational parameter is not provided, set it to empty object
   if (typeof queryParamValues === "undefined") {
     queryParamValues = {};
@@ -74,16 +74,19 @@ var createHar = function(swagger, path, method, queryParamValues, apiKey) {
  * @return {object}
  */
 var getPayload = function(swagger, path, method) {
-  if (typeof swagger.paths[path][method].requestBody !== "undefined") {
-    return {
-      mimeType: "application/json",
-      text: JSON.stringify(
-        Instantiator.instantiate(
-          swagger.paths[path][method].requestBody.content["application/json"]
-            .schema
+  if (typeof swagger.paths[path][method].requestBody !== "undefined" && typeof swagger.paths[path][method].requestBody.content !== "undefined") {
+    var contentType = getFirstContentTypeFromContent(swagger.paths[path][method].requestBody.content)
+    if(typeof contentType !== 'undefined') {
+      return {
+        mimeType: contentType,
+        text: JSON.stringify(
+          Instantiator.instantiate(
+            swagger.paths[path][method].requestBody.content[contentType]
+              .schema
+          )
         )
-      )
-    };
+      };
+    }
   }
   return null;
 };
@@ -198,16 +201,23 @@ var getHeadersArray = function(swagger, path, method, apiKey) {
 
   var pathObj = swagger.paths[path][method];
 
+  if(pathObj && pathObj.requestBody && pathObj.requestBody.content) {
+    var contentType = getFirstContentTypeFromContent(pathObj.requestBody.content)
+  } else {
+    // Fallback to json
+    var contentType = 'application/json'
+  }
+
   // 'accept' header:
   headers.push({
     name: "accept",
-    value: 'application/json'
+    value: contentType
   });
 
   // 'content-type' header:
   headers.push({
     name: "content-type",
-    value: 'application/json'
+    value: contentType
   });
 
   // headers defined in path object:
@@ -373,6 +383,10 @@ var getRequiredHeaderParams = function(swagger, path, method, apiKey) {
 
   return headers;
 };
+
+var getFirstContentTypeFromContent = function(contentObj) {
+  return Object.keys(contentObj)[0]
+}
 
 module.exports = {
   getAll: swaggerToHarList,
