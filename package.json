@@ -20,7 +20,7 @@
     "build": "browserify index.js | uglifyjs -c > swaggersnippet.min.js"
   },
   "dependencies": {
-    "httpsnippet": "github:philosophie/httpsnippet#chore/new-fixes"
+    "httpsnippet": "github:philosophie/httpsnippet"
   },
   "devDependencies": {
     "browserify": "^13.1.0",
