@@ -30,7 +30,7 @@ var Instantiator = require("./schema-instantiator.js");
  * @param  {Object} queryParamValues  Optional: Values for the query parameters if present
  * @return {Object}                   HAR Request object
  */
-var createHar = function(swagger, path, method, queryParamValues, contentType, apiKey) {
+var createHar = function(swagger, path, method, queryParamValues, apiKey) {
   // if the operational parameter is not provided, set it to empty object
   if (typeof queryParamValues === "undefined") {
     queryParamValues = {};
