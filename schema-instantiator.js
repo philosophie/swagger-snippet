@@ -107,6 +107,9 @@ function isEnum(obj) {
  */
 function instantiateEnum(val) {
   // Support for default values in the JSON Schema.
+  if (val.example) {
+    return val.example;
+  }
   if (val.default) {
     return val.default;
   }
