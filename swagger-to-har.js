@@ -170,15 +170,17 @@ var getQueryStrings = function(swagger, path, method, values) {
       ) {
         var type = param.in ? param.schema.type : param.type;
 
+        var exampleVal = typeof param.schema && param.schema.example !== 'undefined' ? param.schema.example + "" : undefined
+
         queryStrings.push({
           name: param.name,
-          value:
-            typeof values[param.name] === "undefined"
-              ? typeof param.default === "undefined"
-                ? "SOME_" + type.toUpperCase() + "_VALUE"
-                : param.default + ""
-              : values[param.name] +
-                "" /* adding a empty string to convert to string */
+          value: exampleVal ? exampleVal : (typeof values[param.name] === "undefined"
+          ? typeof param.default === "undefined"
+            ? "SOME_" + type.toUpperCase() + "_VALUE"
+            : param.default + ""
+          : values[param.name] +
+            "")
+             /* adding a empty string to convert to string */
         });
       }
     }
